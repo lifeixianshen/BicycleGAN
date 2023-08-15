@@ -10,8 +10,7 @@ import torch
 
 
 def get_random_z(opt):
-    z_samples = np.random.normal(0, 1, (opt.n_samples + 1, opt.nz))
-    return z_samples
+    return np.random.normal(0, 1, (opt.n_samples + 1, opt.nz))
 
 
 def produce_frame(t):
@@ -32,7 +31,7 @@ model.eval()
 interp_mode = 'slerp'
 use_vertical = 1 if opt.align_mode == 'vertical' else 0
 
-print('Loading model %s' % opt.model)
+print(f'Loading model {opt.model}')
 # create website
 results_dir = opt.results_dir
 util.mkdir(results_dir)
@@ -40,7 +39,7 @@ total_frames = opt.num_frames * opt.n_samples
 
 
 z_samples = get_random_z(opt)
-frame_rows = [[] for n in range(total_frames)]
+frame_rows = [[] for _ in range(total_frames)]
 
 for i, data in enumerate(islice(dataset, opt.num_test)):
     print('process input image %3.3d/%3.3d' % (i, opt.num_test))
@@ -52,7 +51,7 @@ for i, data in enumerate(islice(dataset, opt.num_test)):
     w = real_A.shape[1]   # border
     real_A_b = np.full((h + hb, w + wb, opt.output_nc), 255, real_A.dtype)
     real_A_b[hb:, wb:, :] = real_A
-    frames = [[real_A_b] for n in range(total_frames)]
+    frames = [[real_A_b] for _ in range(total_frames)]
 
     for n in range(opt.n_samples):
         z0 = z_samples[n]

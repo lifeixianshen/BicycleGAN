@@ -30,14 +30,16 @@ def init_weights(net, init_type='normal', init_gain=0.02):
             elif init_type == 'orthogonal':
                 init.orthogonal_(m.weight.data, gain=init_gain)
             else:
-                raise NotImplementedError('initialization method [%s] is not implemented' % init_type)
+                raise NotImplementedError(
+                    f'initialization method [{init_type}] is not implemented'
+                )
             if hasattr(m, 'bias') and m.bias is not None:
                 init.constant_(m.bias.data, 0.0)
         elif classname.find('BatchNorm2d') != -1:  # BatchNorm Layer's weight is not a matrix; only normal distribution applies.
             init.normal_(m.weight.data, 1.0, init_gain)
             init.constant_(m.bias.data, 0.0)
 
-    print('initialize network with %s' % init_type)
+    print(f'initialize network with {init_type}')
     net.apply(init_func)  # apply the initialization function <init_func>
 
 
@@ -99,7 +101,7 @@ def get_norm_layer(norm_type='instance'):
     elif norm_type == 'none':
         norm_layer = None
     else:
-        raise NotImplementedError('normalization layer [%s] is not found' % norm_type)
+        raise NotImplementedError(f'normalization layer [{norm_type}] is not found')
     return norm_layer
 
 
@@ -113,7 +115,8 @@ def get_non_linearity(layer_type='relu'):
         nl_layer = functools.partial(nn.ELU, inplace=True)
     else:
         raise NotImplementedError(
-            'nonlinearity activitation [%s] is not found' % layer_type)
+            f'nonlinearity activitation [{layer_type}] is not found'
+        )
     return nl_layer
 
 
@@ -139,7 +142,7 @@ def define_G(input_nc, output_nc, nz, ngf, netG='unet_128', norm='batch', nl='re
         net = G_Unet_add_all(input_nc, output_nc, nz, 8, ngf, norm_layer=norm_layer, nl_layer=nl_layer,
                              use_dropout=use_dropout, upsample=upsample)
     else:
-        raise NotImplementedError('Generator model name [%s] is not recognized' % net)
+        raise NotImplementedError(f'Generator model name [{net}] is not recognized')
 
     return init_net(net, init_type, init_gain, gpu_ids)
 
@@ -159,7 +162,9 @@ def define_D(input_nc, ndf, netD, norm='batch', nl='lrelu', init_type='xavier', 
     elif netD == 'basic_256_multi':
         net = D_NLayersMulti(input_nc=input_nc, ndf=ndf, n_layers=3, norm_layer=norm_layer, num_D=num_Ds)
     else:
-        raise NotImplementedError('Discriminator model name [%s] is not recognized' % net)
+        raise NotImplementedError(
+            f'Discriminator model name [{net}] is not recognized'
+        )
     return init_net(net, init_type, init_gain, gpu_ids)
 
 
@@ -183,7 +188,7 @@ def define_E(input_nc, output_nc, ndf, netE,
         net = E_NLayers(input_nc, output_nc, ndf, n_layers=5, norm_layer=norm_layer,
                         nl_layer=nl_layer, vaeLike=vaeLike)
     else:
-        raise NotImplementedError('Encoder model name [%s] is not recognized' % net)
+        raise NotImplementedError(f'Encoder model name [{net}] is not recognized')
 
     return init_net(net, init_type, init_gain, gpu_ids)
 
@@ -308,10 +313,7 @@ class RecLoss(nn.Module):
         self.use_L2 = use_L2
 
     def __call__(self, input, target, batch_mean=True):
-        if self.use_L2:
-            diff = (input - target) ** 2
-        else:
-            diff = torch.abs(input - target)
+        diff = (input - target) ** 2 if self.use_L2 else torch.abs(input - target)
         if batch_mean:
             return torch.mean(diff)
         else:
@@ -351,7 +353,7 @@ class GANLoss(nn.Module):
         elif gan_mode in ['wgangp']:
             self.loss = None
         else:
-            raise NotImplementedError('gan mode %s not implemented' % gan_mode)
+            raise NotImplementedError(f'gan mode {gan_mode} not implemented')
 
     def get_target_tensor(self, prediction, target_is_real):
         """Create label tensors with the same size as the input.
@@ -364,10 +366,7 @@ class GANLoss(nn.Module):
             A label tensor filled with ground truth label, and with the size of the input
         """
 
-        if target_is_real:
-            target_tensor = self.real_label
-        else:
-            target_tensor = self.fake_label
+        target_tensor = self.real_label if target_is_real else self.fake_label
         return target_tensor.expand_as(prediction)
 
     def __call__(self, predictions, target_is_real):
@@ -386,10 +385,7 @@ class GANLoss(nn.Module):
                 target_tensor = self.get_target_tensor(prediction, target_is_real)
                 loss = self.loss(prediction, target_tensor)
             elif self.gan_mode == 'wgangp':
-                if target_is_real:
-                    loss = -prediction.mean()
-                else:
-                    loss = prediction.mean()
+                loss = -prediction.mean() if target_is_real else prediction.mean()
             all_losses.append(loss)
         total_loss = sum(all_losses)
         return total_loss, all_losses
@@ -418,7 +414,7 @@ def cal_gradient_penalty(netD, real_data, fake_data, device, type='mixed', const
             alpha = alpha.to(device)
             interpolatesv = alpha * real_data + ((1 - alpha) * fake_data)
         else:
-            raise NotImplementedError('{} not implemented'.format(type))
+            raise NotImplementedError(f'{type} not implemented')
         interpolatesv.requires_grad_(True)
         disc_interpolates = netD(interpolatesv)
         gradients = torch.autograd.grad(outputs=disc_interpolates, inputs=interpolatesv,
@@ -446,7 +442,7 @@ class G_Unet_add_input(nn.Module):
         # construct unet structure
         unet_block = UnetBlock(ngf * max_nchn, ngf * max_nchn, ngf * max_nchn,
                                innermost=True, norm_layer=norm_layer, nl_layer=nl_layer, upsample=upsample)
-        for i in range(num_downs - 5):
+        for _ in range(num_downs - 5):
             unet_block = UnetBlock(ngf * max_nchn, ngf * max_nchn, ngf * max_nchn, unet_block,
                                    norm_layer=norm_layer, nl_layer=nl_layer, use_dropout=use_dropout, upsample=upsample)
         unet_block = UnetBlock(ngf * 4, ngf * 4, ngf * max_nchn, unet_block,
@@ -481,8 +477,7 @@ def upsampleLayer(inplanes, outplanes, upsample='basic', padding_type='zero'):
                   nn.ReflectionPad2d(1),
                   nn.Conv2d(inplanes, outplanes, kernel_size=3, stride=1, padding=0)]
     else:
-        raise NotImplementedError(
-            'upsample layer [%s] not implemented' % upsample)
+        raise NotImplementedError(f'upsample layer [{upsample}] not implemented')
     return upconv
 
 
@@ -504,8 +499,7 @@ class UnetBlock(nn.Module):
         elif padding_type == 'zero':
             p = 1
         else:
-            raise NotImplementedError(
-                'padding [%s] is not implemented' % padding_type)
+            raise NotImplementedError(f'padding [{padding_type}] is not implemented')
         downconv += [nn.Conv2d(input_nc, inner_nc,
                                kernel_size=4, stride=2, padding=p)]
         # downsample is different from upsample
@@ -546,10 +540,7 @@ class UnetBlock(nn.Module):
         self.model = nn.Sequential(*model)
 
     def forward(self, x):
-        if self.outermost:
-            return self.model(x)
-        else:
-            return torch.cat([self.model(x), x], 1)
+        return self.model(x) if self.outermost else torch.cat([self.model(x), x], 1)
 
 
 def conv3x3(in_planes, out_planes):
@@ -596,8 +587,7 @@ class BasicBlockUp(nn.Module):
         self.shortcut = upsampleConv(inplanes, outplanes, kw=1, padw=0)
 
     def forward(self, x):
-        out = self.conv(x) + self.shortcut(x)
-        return out
+        return self.conv(x) + self.shortcut(x)
 
 
 class BasicBlock(nn.Module):
@@ -616,8 +606,7 @@ class BasicBlock(nn.Module):
         self.shortcut = meanpoolConv(inplanes, outplanes)
 
     def forward(self, x):
-        out = self.conv(x) + self.shortcut(x)
-        return out
+        return self.conv(x) + self.shortcut(x)
 
 
 class E_ResNet(nn.Module):
@@ -645,12 +634,10 @@ class E_ResNet(nn.Module):
         x_conv = self.conv(x)
         conv_flat = x_conv.view(x.size(0), -1)
         output = self.fc(conv_flat)
-        if self.vaeLike:
-            outputVar = self.fcVar(conv_flat)
-            return output, outputVar
-        else:
+        if not self.vaeLike:
             return output
-        return output
+        outputVar = self.fcVar(conv_flat)
+        return output, outputVar
 
 
 # Defines the Unet generator.
@@ -667,7 +654,7 @@ class G_Unet_add_all(nn.Module):
                                       norm_layer=norm_layer, nl_layer=nl_layer, upsample=upsample)
         unet_block = UnetBlock_with_z(ngf * 8, ngf * 8, ngf * 8, nz, unet_block,
                                       norm_layer=norm_layer, nl_layer=nl_layer, use_dropout=use_dropout, upsample=upsample)
-        for i in range(num_downs - 6):
+        for _ in range(num_downs - 6):
             unet_block = UnetBlock_with_z(ngf * 8, ngf * 8, ngf * 8, nz, unet_block,
                                           norm_layer=norm_layer, nl_layer=nl_layer, use_dropout=use_dropout, upsample=upsample)
         unet_block = UnetBlock_with_z(ngf * 4, ngf * 4, ngf * 8, nz, unet_block,
@@ -698,8 +685,7 @@ class UnetBlock_with_z(nn.Module):
         elif padding_type == 'zero':
             p = 1
         else:
-            raise NotImplementedError(
-                'padding [%s] is not implemented' % padding_type)
+            raise NotImplementedError(f'padding [{padding_type}] is not implemented')
 
         self.outermost = outermost
         self.innermost = innermost

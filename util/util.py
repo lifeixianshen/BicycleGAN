@@ -28,10 +28,7 @@ def tensor2im(input_image, imtype=np.uint8):
 
 def tensor2vec(vector_tensor):
     numpy_vec = vector_tensor.data.cpu().numpy()
-    if numpy_vec.ndim == 4:
-        return numpy_vec[:, :, 0, 0]
-    else:
-        return numpy_vec
+    return numpy_vec[:, :, 0, 0] if numpy_vec.ndim == 4 else numpy_vec
 
 
 def pickle_load(file_name):

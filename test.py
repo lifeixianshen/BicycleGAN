@@ -18,11 +18,15 @@ dataset = create_dataset(opt)
 model = create_model(opt)
 model.setup(opt)
 model.eval()
-print('Loading model %s' % opt.model)
+print(f'Loading model {opt.model}')
 
 # create website
-web_dir = os.path.join(opt.results_dir, opt.phase + '_sync' if opt.sync else opt.phase)
-webpage = html.HTML(web_dir, 'Training = %s, Phase = %s, Class =%s' % (opt.name, opt.phase, opt.name))
+web_dir = os.path.join(
+    opt.results_dir, f'{opt.phase}_sync' if opt.sync else opt.phase
+)
+webpage = html.HTML(
+    web_dir, f'Training = {opt.name}, Phase = {opt.phase}, Class ={opt.name}'
+)
 
 # sample random z
 if opt.sync:

@@ -98,8 +98,7 @@ class BaseOptions():
         It will print both current options and default values(if different).
         It will save options into a text file / [checkpoints_dir] / opt.txt
         """
-        message = ''
-        message += '----------------- Options ---------------\n'
+        message = '' + '----------------- Options ---------------\n'
         for k, v in sorted(vars(opt).items()):
             comment = ''
             default = self.parser.get_default(k)
@@ -124,7 +123,7 @@ class BaseOptions():
 
         # process opt.suffix
         if opt.suffix:
-            suffix = ('_' + opt.suffix.format(**vars(opt))) if opt.suffix != '' else ''
+            suffix = f'_{opt.suffix.format(**vars(opt))}' if opt.suffix != '' else ''
             opt.name = opt.name + suffix
 
         self.print_options(opt)
@@ -136,7 +135,7 @@ class BaseOptions():
             id = int(str_id)
             if id >= 0:
                 opt.gpu_ids.append(id)
-        if len(opt.gpu_ids) > 0:
+        if opt.gpu_ids:
             torch.cuda.set_device(opt.gpu_ids[0])
 
         self.opt = opt

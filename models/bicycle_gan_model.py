@@ -21,7 +21,6 @@ class BiCycleGANModel(BaseModel):
         use_D = opt.isTrain and opt.lambda_GAN > 0.0
         use_D2 = opt.isTrain and opt.lambda_GAN2 > 0.0 and not opt.use_same_D
         use_E = opt.isTrain or not opt.no_encode
-        use_vae = True
         self.model_names = ['G']
         self.netG = networks.define_G(opt.input_nc, opt.output_nc, opt.nz, opt.ngf, netG=opt.netG,
                                       norm=opt.norm, nl=opt.nl, use_dropout=opt.use_dropout, init_type=opt.init_type, init_gain=opt.init_gain,
@@ -39,6 +38,7 @@ class BiCycleGANModel(BaseModel):
             self.netD2 = None
         if use_E:
             self.model_names += ['E']
+            use_vae = True
             self.netE = networks.define_E(opt.output_nc, opt.nz, opt.nef, netE=opt.netE, norm=opt.norm, nl=opt.nl,
                                           init_type=opt.init_type, init_gain=opt.init_gain, gpu_ids=self.gpu_ids, vaeLike=use_vae)
 
@@ -98,8 +98,8 @@ class BiCycleGANModel(BaseModel):
         # get real images
         half_size = self.opt.batch_size // 2
         # A1, B1 for encoded; A2, B2 for random
-        self.real_A_encoded = self.real_A[0:half_size]
-        self.real_B_encoded = self.real_B[0:half_size]
+        self.real_A_encoded = self.real_A[:half_size]
+        self.real_B_encoded = self.real_B[:half_size]
         self.real_B_random = self.real_B[half_size:]
         # get encoded z
         self.z_encoded, self.mu, self.logvar = self.encode(self.real_B_encoded)
